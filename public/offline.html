@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qmuter - Offline</title>
+    <meta name="theme-color" content="#10b981">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .offline-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .offline-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        h1 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .retry-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .retry-btn:hover {
+            background: #059669;
+        }
+
+        .features {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .feature-icon {
+            font-size: 1rem;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: #fef3c7;
+            color: #92400e;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="status-indicator">
+            <span>📱</span>
+            Offline Mode
+        </div>
+        
+        <div class="offline-icon">📶</div>
+        
+        <h1>You're Offline</h1>
+        <p>Don't worry! Qmuter works offline too. Some features may be limited until you're back online.</p>
+        
+        <button class="retry-btn" onclick="window.location.reload()">
+            🔄 Try Again
+        </button>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                View cached routes
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                Access saved data
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✅</span>
+                Emergency button still works
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⏳</span>
+                New routes will sync when online
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check for online status
+        function checkOnlineStatus() {
+            if (navigator.onLine) {
+                window.location.reload();
+            }
+        }
+
+        // Listen for online event
+        window.addEventListener('online', checkOnlineStatus);
+
+        // Check periodically
+        setInterval(checkOnlineStatus, 5000);
+
+        // Add some interactivity
+        document.querySelector('.retry-btn').addEventListener('click', function() {
+            this.textContent = '🔄 Checking...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                this.textContent = '🔄 Try Again';
+                this.disabled = false;
+            }, 2000);
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,568 @@
+import * as functions from 'firebase-functions';
+import express from 'express';
+import cors from 'cors';
+import routes from './routes/routes';
+import liveTrackingRoutes from './routes/liveTracking';
+import { errorHandler } from './middleware/auth';
+
+// Initialize Express app
+const app = express();
+
+// Middleware
+app.use(cors({ origin: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// API routes
+app.use('/api/v1', routes);
+app.use('/api/v1/live-tracking', liveTrackingRoutes);
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint not found',
+    path: req.originalUrl
+  });
+});
+
+// Global error handler
+app.use(errorHandler);
+
+// Export HTTP functions
+export const api = functions
+  .region('us-central1')
+  .https.onRequest(app);
+
+// Firestore Triggers
+// ==================
+
+import { db } from './config/firebase';
+import { createTimestamp, generateId } from './utils/helpers';
+
+// Trigger when a new route is created
+export const onRouteCreated = functions
+  .region('us-central1')
+  .firestore
+  .document('routes/{routeId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const routeData = snap.data();
+      console.log(`New route created: ${routeData.routeName} by ${routeData.driverId}`);
+      
+      // You can add additional logic here like:
+      // - Sending notifications to nearby users
+      // - Updating search indexes
+      // - Triggering analytics events
+      
+    } catch (error) {
+      console.error('Error in onRouteCreated:', error);
+    }
+  });
+
+// Trigger when a route is updated
+export const onRouteUpdated = functions
+  .region('us-central1')
+  .firestore
+  .document('routes/{routeId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const beforeData = change.before.data();
+      const afterData = change.after.data();
+      
+      console.log(`Route updated: ${afterData.routeName}`);
+      
+      // Check if status changed to approved
+      if (beforeData.status === 'pending' && afterData.status === 'approved') {
+        console.log(`Route approved: ${afterData.routeName}`);
+        
+        // Create a notification for the driver
+        const notification = {
+          id: generateId(),
+          userId: afterData.driverId,
+          type: 'route-approved',
+          title: 'Route Approved! 🎉',
+          message: `Your route "${afterData.routeName}" has been approved and is now active.`,
+          data: {
+            routeId: context.params.routeId,
+            routeName: afterData.routeName
+          },
+          read: false,
+          createdAt: createTimestamp()
+        };
+        
+        const notificationRef = db.collection('notifications').doc(notification.id);
+        await notificationRef.set(notification);
+      }
+      
+    } catch (error) {
+      console.error('Error in onRouteUpdated:', error);
+    }
+  });
+
+// Trigger when a user is created
+export const onUserCreated = functions
+  .region('us-central1')
+  .firestore
+  .document('users/{userId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const userData = snap.data();
+      console.log(`New user created: ${userData.displayName} (${userData.email})`);
+      
+      // You can add additional logic here like:
+      // - Sending welcome emails
+      // - Creating default preferences
+      // - Adding to analytics
+      
+    } catch (error) {
+      console.error('Error in onUserCreated:', error);
+    }
+  });
+
+// Trigger when a user is updated
+export const onUserUpdated = functions
+  .region('us-central1')
+  .firestore
+  .document('users/{userId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const beforeData = change.before.data();
+      const afterData = change.after.data();
+      
+      console.log(`User updated: ${afterData.displayName}`);
+      
+      // Check if user was suspended
+      if (!beforeData.suspended && afterData.suspended) {
+        console.log(`User suspended: ${afterData.displayName}`);
+        
+        // You can add logic here like:
+        // - Cancelling active bookings
+        // - Notifying connected users
+        // - Logging the suspension
+      }
+      
+      // Check if user was activated
+      if (beforeData.suspended && !afterData.suspended) {
+        console.log(`User activated: ${afterData.displayName}`);
+        
+        // You can add logic here like:
+        // - Sending reactivation notification
+        // - Updating user status in related documents
+      }
+      
+    } catch (error) {
+      console.error('Error in onUserUpdated:', error);
+    }
+  });
+
+// Live Tracking Triggers
+// =====================
+
+// Trigger when live tracking data is updated
+export const onLiveTrackingUpdated = functions
+  .region('us-central1')
+  .firestore
+  .document('liveTracking/{tripId}')
+  .onUpdate(async (change, context) => {
+    try {
+      const beforeData = change.before.data();
+      const afterData = change.after.data();
+      
+      console.log(`Live tracking updated for trip: ${context.params.tripId}`);
+      
+      // Check if trip status changed to completed
+      if (beforeData.tripStatus.status !== 'completed' && afterData.tripStatus.status === 'completed') {
+        console.log(`Trip completed: ${context.params.tripId}`);
+        
+        // You can add logic here like:
+        // - Calculating final trip statistics
+        // - Updating user ride counts
+        // - Sending completion notifications
+        // - Processing payments
+      }
+      
+      // Check if both parties arrived
+      if (!beforeData.tripStatus.driverArrived && afterData.tripStatus.driverArrived) {
+        console.log(`Driver arrived for trip: ${context.params.tripId}`);
+      }
+      
+      if (!beforeData.tripStatus.riderArrived && afterData.tripStatus.riderArrived) {
+        console.log(`Rider arrived for trip: ${context.params.tripId}`);
+      }
+      
+    } catch (error) {
+      console.error('Error in onLiveTrackingUpdated:', error);
+    }
+  });
+
+// Trigger when live tracking is created
+export const onLiveTrackingCreated = functions
+  .region('us-central1')
+  .firestore
+  .document('liveTracking/{tripId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const trackingData = snap.data();
+      console.log(`Live tracking started for trip: ${context.params.tripId}`);
+      
+      // You can add logic here like:
+      // - Sending initial notifications to both parties
+      // - Setting up monitoring for the trip
+      // - Logging trip start for analytics
+      
+    } catch (error) {
+      console.error('Error in onLiveTrackingCreated:', error);
+    }
+  });
+
+// Trigger when a notification is created
+export const onNotificationCreated = functions
+  .region('us-central1')
+  .firestore
+  .document('notifications/{notificationId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const notificationData = snap.data();
+      console.log(`Notification created: ${notificationData.type} for user ${notificationData.userId}`);
+      
+      // Here you would integrate with Firebase Cloud Messaging (FCM)
+      // to send push notifications to the user's device
+      
+      // Example FCM integration:
+      // await sendPushNotification(notificationData.userId, {
+      //   title: notificationData.title,
+      //   body: notificationData.message,
+      //   data: notificationData.data
+      // });
+      
+    } catch (error) {
+      console.error('Error in onNotificationCreated:', error);
+    }
+  });
+
+// Scheduled Functions
+// ===================
+
+// Daily cleanup of expired routes
+export const cleanupExpiredRoutes = functions
+  .region('us-central1')
+  .pubsub
+  .schedule('every 24 hours')
+  .onRun(async (context) => {
+    try {
+      console.log('Running daily cleanup of expired routes');
+      
+      const now = new Date();
+      const oneMonthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      
+      // Get routes that haven't been updated in a month and are not active
+      const expiredRoutes = await db.collection('routes')
+        .where('updatedAt', '<', oneMonthAgo)
+        .where('status', 'in', ['pending', 'rejected'])
+        .get();
+      
+      const batch = db.batch();
+      let deletedCount = 0;
+      
+      expiredRoutes.docs.forEach(doc => {
+        batch.delete(doc.ref);
+        deletedCount++;
+      });
+      
+      await batch.commit();
+      
+      console.log(`Cleaned up ${deletedCount} expired routes`);
+      
+    } catch (error) {
+      console.error('Error in cleanupExpiredRoutes:', error);
+    }
+  });
+
+// Weekly statistics aggregation
+export const aggregateWeeklyStats = functions
+  .region('us-central1')
+  .pubsub
+  .schedule('every monday 00:00')
+  .onRun(async (context) => {
+    try {
+      console.log('Running weekly statistics aggregation');
+      
+      // Get all routes created in the last week
+      const oneWeekAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
+      
+      const weeklyRoutes = await db.collection('routes')
+        .where('createdAt', '>=', oneWeekAgo)
+        .get();
+      
+      const stats = {
+        totalRoutes: weeklyRoutes.size,
+        approvedRoutes: weeklyRoutes.docs.filter(doc => doc.data().status === 'approved').length,
+        pendingRoutes: weeklyRoutes.docs.filter(doc => doc.data().status === 'pending').length,
+        rejectedRoutes: weeklyRoutes.docs.filter(doc => doc.data().status === 'rejected').length,
+        totalUpvotes: weeklyRoutes.docs.reduce((sum, doc) => sum + doc.data().upvotes, 0),
+        totalDownvotes: weeklyRoutes.docs.reduce((sum, doc) => sum + doc.data().downvotes, 0),
+        weekStart: oneWeekAgo.toISOString(),
+        weekEnd: new Date().toISOString(),
+        createdAt: createTimestamp()
+      };
+      
+      // Save weekly stats
+      await db.collection('weeklyStats').doc().set(stats);
+      
+      console.log('Weekly statistics aggregated and saved');
+      
+    } catch (error) {
+      console.error('Error in aggregateWeeklyStats:', error);
+    }
+  });
+
+// Daily cleanup of old live tracking data
+export const cleanupOldLiveTracking = functions
+  .region('us-central1')
+  .pubsub
+  .schedule('every 24 hours')
+  .onRun(async (context) => {
+    try {
+      console.log('Running daily cleanup of old live tracking data');
+      
+      const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+      
+      // Get completed trips older than 24 hours
+      const oldTrips = await db.collection('liveTracking')
+        .where('updatedAt', '<', oneDayAgo)
+        .where('tripStatus.status', '==', 'completed')
+        .get();
+      
+      const batch = db.batch();
+      let deletedCount = 0;
+      
+      oldTrips.docs.forEach(doc => {
+        batch.delete(doc.ref);
+        deletedCount++;
+      });
+      
+      await batch.commit();
+      
+      console.log(`Cleaned up ${deletedCount} old live tracking records`);
+      
+    } catch (error) {
+      console.error('Error in cleanupOldLiveTracking:', error);
+    }
+  });
+
+// Callable Functions
+// ==================
+
+import { onCall } from 'firebase-functions/v2/https';
+
+// Get user's routes (callable function)
+export const getUserRoutes = onCall(async (request) => {
+  try {
+    const { uid } = request.auth || {};
+    
+    if (!uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    const routesSnapshot = await db.collection('routes')
+      .where('driverId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+    
+    const routes = routesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    return {
+      success: true,
+      data: routes
+    };
+    
+  } catch (error) {
+    throw new functions.https.HttpsError('internal', 'Failed to get user routes');
+  }
+});
+
+// Vote on route (callable function)
+export const voteOnRoute = onCall(async (request) => {
+  try {
+    const { uid } = request.auth || {};
+    const { routeId, vote } = request.data;
+    
+    if (!uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    if (!routeId || !vote || !['upvote', 'downvote'].includes(vote)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid routeId or vote');
+    }
+    
+    const routeRef = db.collection('routes').doc(routeId);
+    
+    await db.runTransaction(async (transaction) => {
+      const routeDoc = await transaction.get(routeRef);
+      
+      if (!routeDoc.exists) {
+        throw new functions.https.HttpsError('not-found', 'Route not found');
+      }
+      
+      const route = routeDoc.data();
+      const upvotes = vote === 'upvote' ? route.upvotes + 1 : route.upvotes;
+      const downvotes = vote === 'downvote' ? route.downvotes + 1 : route.downvotes;
+      const communityScore = Math.round(((upvotes - downvotes) / (upvotes + downvotes)) * 100);
+      
+      transaction.update(routeRef, {
+        upvotes,
+        downvotes,
+        communityScore,
+        updatedAt: createTimestamp()
+      });
+    });
+    
+    return {
+      success: true,
+      message: 'Vote recorded successfully'
+    };
+    
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to vote on route');
+  }
+});
+
+// Get nearby routes (callable function)
+export const getNearbyRoutes = onCall(async (request) => {
+  try {
+    const { lat, lng, radius = 10 } = request.data;
+    
+    if (!lat || !lng) {
+      throw new functions.https.HttpsError('invalid-argument', 'Latitude and longitude are required');
+    }
+    
+    // Get all active routes (simplified approach)
+    const routesSnapshot = await db.collection('routes')
+      .where('status', '==', 'active')
+      .orderBy('createdAt', 'desc')
+      .get();
+    
+    const routes = routesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Filter by distance (client-side filtering for simplicity)
+    const nearbyRoutes = routes.filter(route => {
+      const distance = Math.sqrt(
+        Math.pow(route.startPoint.lat - lat, 2) + 
+        Math.pow(route.startPoint.lng - lng, 2)
+      ) * 111; // Rough conversion to km
+      return distance <= radius;
+    });
+    
+    return {
+      success: true,
+      data: nearbyRoutes
+    };
+    
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to get nearby routes');
+  }
+});
+
+// Live tracking callable functions
+export const startLiveTracking = onCall(async (request) => {
+  try {
+    const { uid } = request.auth || {};
+    const { tripId, driverId, riderId, routeId, pickupLocation, dropoffLocation } = request.data;
+    
+    if (!uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    if (!tripId || !driverId || !riderId || !routeId || !pickupLocation || !dropoffLocation) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+    }
+    
+    // Verify user is part of this trip
+    if (uid !== driverId && uid !== riderId) {
+      throw new functions.https.HttpsError('permission-denied', 'Unauthorized to start tracking for this trip');
+    }
+    
+    const { LiveTrackingService } = await import('./services/liveTrackingService');
+    const liveTrackingService = new LiveTrackingService();
+    
+    const result = await liveTrackingService.startTracking({
+      tripId,
+      driverId,
+      riderId,
+      routeId,
+      pickupLocation,
+      dropoffLocation
+    });
+    
+    if (!result.success) {
+      throw new functions.https.HttpsError('internal', result.error || 'Failed to start tracking');
+    }
+    
+    return result;
+    
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to start live tracking');
+  }
+});
+
+export const updateLiveLocation = onCall(async (request) => {
+  try {
+    const { uid } = request.auth || {};
+    const { tripId, role, lat, lng, accuracy, speed, heading } = request.data;
+    
+    if (!uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    if (!tripId || !role || lat === undefined || lng === undefined) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters');
+    }
+    
+    const { LiveTrackingService } = await import('./services/liveTrackingService');
+    const liveTrackingService = new LiveTrackingService();
+    
+    const result = await liveTrackingService.updateLocation({
+      tripId,
+      role,
+      lat,
+      lng,
+      accuracy,
+      speed,
+      heading
+    });
+    
+    if (!result.success) {
+      throw new functions.https.HttpsError('internal', result.error || 'Failed to update location');
+    }
+    
+    return result;
+    
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError('internal', 'Failed to update live location');
+  }
+}); 

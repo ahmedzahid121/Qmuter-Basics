@@ -1,0 +1,59 @@
+{
+  "name": "Qmuter - Community Route Sharing",
+  "short_name": "Qmuter",
+  "description": "Connect with drivers and passengers on similar routes. Make travel more sustainable, affordable, and community-driven.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["travel", "transportation", "social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.html",
+      "sizes": "192x192",
+      "type": "text/html",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.html",
+      "sizes": "512x512",
+      "type": "text/html",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "capture_links": "existing-client-navigate",
+  "file_handlers": [],
+  "protocol_handlers": [],
+  "url_handlers": [],
+  "scope_extensions": [],
+  "iarc_rating_id": "",
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "permissions": [
+    "geolocation",
+    "notifications"
+  ]
+}

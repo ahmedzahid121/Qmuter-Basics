@@ -1,0 +1,115 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function isEmailVerified() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    // User profiles - users can read/write their own profile
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId); // Allow creation for unverified users
+      allow update: if isOwner(userId);
+      allow delete: if isAdmin();
+    }
+
+    // Routes - public read, authenticated create/update, admin delete
+    match /routes/{routeId} {
+      allow read: if true; // Public read for route discovery
+      allow create: if isAuthenticated(); // Allow creation for unverified users
+      allow update: if isAuthenticated() && 
+        (resource.data.driverId == request.auth.uid || isAdmin());
+      allow delete: if isAuthenticated() && 
+        (resource.data.driverId == request.auth.uid || isAdmin());
+    }
+
+    // Bookings - users can read their own bookings, drivers can read their route bookings
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.passengerId == request.auth.uid || 
+         resource.data.driverId == request.auth.uid || 
+         isAdmin());
+      allow create: if isAuthenticated(); // Allow creation for unverified users
+      allow update: if isAuthenticated() && 
+        (resource.data.passengerId == request.auth.uid || 
+         resource.data.driverId == request.auth.uid || 
+         isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Live tracking - only participants can read/write
+    match /liveTracking/{tripId} {
+      allow read, write: if isAuthenticated() && 
+        (resource.data.driverId == request.auth.uid || 
+         resource.data.riderId == request.auth.uid || 
+         isAdmin());
+    }
+
+    // Notifications - users can only read their own notifications
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Chat messages - only participants can read/write
+    match /messages/{messageId} {
+      allow read, write: if isAuthenticated() && 
+        (resource.data.senderId == request.auth.uid || 
+         resource.data.receiverId == request.auth.uid);
+    }
+
+    // Conversations - only participants can read/write
+    match /conversations/{conversationId} {
+      allow read, write: if isAuthenticated() && 
+        (resource.data.participant1Id == request.auth.uid || 
+         resource.data.participant2Id == request.auth.uid);
+    }
+
+    // Admin actions - only admins can read/write
+    match /adminActions/{actionId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Weekly stats - public read, admin write
+    match /weeklyStats/{statId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Payments - users can only read their own payments
+    match /payments/{paymentId} {
+      allow read, write: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Emergency system collections
+    match /emergencies/{emergencyId} {
+      allow read, write: if isAdmin();
+      allow create: if isAuthenticated(); // Users can trigger emergencies
+    }
+
+    // Admin logs collection (audit trail)
+    match /admin_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

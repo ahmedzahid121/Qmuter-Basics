@@ -1,0 +1,22 @@
+import Joi from 'joi';
+export declare const locationSchema: Joi.ObjectSchema<any>;
+export declare const pickupPointSchema: Joi.ObjectSchema<any>;
+export declare const scheduleSchema: Joi.ObjectSchema<any>;
+export declare const createRouteSchema: Joi.ObjectSchema<any>;
+export declare const updateRouteSchema: Joi.ObjectSchema<any>;
+export declare const createBookingSchema: Joi.ObjectSchema<any>;
+export declare const adminActionSchema: Joi.ObjectSchema<any>;
+export declare const paginationSchema: Joi.ObjectSchema<any>;
+export declare const routeFiltersSchema: Joi.ObjectSchema<any>;
+export declare const userUpdateSchema: Joi.ObjectSchema<any>;
+export declare const paymentSchema: Joi.ObjectSchema<any>;
+export declare const notificationSchema: Joi.ObjectSchema<any>;
+export declare const liveLocationSchema: Joi.ObjectSchema<any>;
+export declare const updateLocationSchema: Joi.ObjectSchema<any>;
+export declare const startTrackingSchema: Joi.ObjectSchema<any>;
+export declare const etaRequestSchema: Joi.ObjectSchema<any>;
+export declare const tripStatusSchema: Joi.ObjectSchema<any>;
+export declare const notificationFlagsSchema: Joi.ObjectSchema<any>;
+export declare const liveTrackingDataSchema: Joi.ObjectSchema<any>;
+export declare const validateRequest: <T>(schema: Joi.Schema, data: any) => T;
+//# sourceMappingURL=validation.d.ts.map
