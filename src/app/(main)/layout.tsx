@@ -20,6 +20,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const BYPASS_AUTH = true; // Set to false to re-enable authentication
 
   const isPublicPage = pathname === '/';
+  const isOnboardingPage = pathname === '/onboarding';
 
   // Detect if app is running in standalone mode (PWA)
   const isStandalone = 
@@ -29,10 +30,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
 
   useEffect(() => {
-    // TEMPORARY: Skip authentication checks if bypass is enabled
+    // TEMPORARY: Skip ALL authentication and onboarding checks if bypass is enabled
     if (BYPASS_AUTH) {
       setAuthChecked(true);
       setShowSplash(false);
+      // If user is on onboarding page, redirect to dashboard
+      if (isOnboardingPage) {
+        router.replace('/dashboard');
+      }
       return;
     }
 
