@@ -55,6 +55,7 @@ export function EnhancedAddressSelector({
   const [inputValue, setInputValue] = useState(value);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [gtfsStops, setGtfsStops] = useState<GTFSStop[]>([]);
+  const [filteredGtfsStops, setFilteredGtfsStops] = useState<GTFSStop[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [sessionToken, setSessionToken] = useState<string>("");
@@ -100,6 +101,7 @@ export function EnhancedAddressSelector({
 
     if (value.length < 2) {
       setPredictions([]);
+      setFilteredGtfsStops([]);
       setShowDropdown(false);
       return;
     }
@@ -114,6 +116,7 @@ export function EnhancedAddressSelector({
       ]);
 
       setPredictions(placePredictions);
+      setFilteredGtfsStops(filteredStops);
       setShowDropdown(placePredictions.length > 0 || filteredStops.length > 0);
     } catch (error) {
       console.error('Search error:', error);
@@ -138,8 +141,13 @@ export function EnhancedAddressSelector({
 
   const searchGtfsStops = async (query: string): Promise<GTFSStop[]> => {
     try {
-      const stops = await gtfsService.searchStops(query);
-      return stops.slice(0, 5); // Limit results
+      // Use local GTFS data for faster search
+      const lowerQuery = query.toLowerCase();
+      const filtered = gtfsStops.filter(stop => 
+        stop.stop_name.toLowerCase().includes(lowerQuery) ||
+        stop.stop_code.toLowerCase().includes(lowerQuery)
+      );
+      return filtered.slice(0, 5); // Limit results
     } catch (error) {
       console.error('GTFS search error:', error);
       return [];
@@ -194,6 +202,7 @@ export function EnhancedAddressSelector({
     setInputValue(stop.stop_name);
     onChange?.(stop.stop_name);
     setPredictions([]);
+    setFilteredGtfsStops([]);
     setShowDropdown(false);
     
     if (onStopSelect) {
@@ -433,7 +442,7 @@ export function EnhancedAddressSelector({
         </div>
       )}
 
-      {showDropdown && (predictions.length > 0 || gtfsStops.length > 0) && (
+      {showDropdown && (predictions.length > 0 || filteredGtfsStops.length > 0) && (
         <Card
           ref={dropdownRef}
           className="absolute z-50 w-full mt-1 shadow-lg border border-gray-200"
@@ -450,12 +459,12 @@ export function EnhancedAddressSelector({
                 {/* All Results */}
                 <TabsContent value="all" className="p-0">
                   {/* GTFS Stops */}
-                  {gtfsStops.length > 0 && (
+                  {filteredGtfsStops.length > 0 && (
                     <div className="border-b border-gray-100">
                       <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-600">
                         Transport Stops
                       </div>
-                      {gtfsStops.map((stop) => (
+                      {filteredGtfsStops.map((stop) => (
                         <button
                           key={stop.stop_id}
                           type="button"
@@ -513,8 +522,8 @@ export function EnhancedAddressSelector({
 
                 {/* GTFS Stops Only */}
                 <TabsContent value="stops" className="p-0">
-                  {gtfsStops.length > 0 ? (
-                    gtfsStops.map((stop) => (
+                  {filteredGtfsStops.length > 0 ? (
+                    filteredGtfsStops.map((stop) => (
                       <button
                         key={stop.stop_id}
                         type="button"

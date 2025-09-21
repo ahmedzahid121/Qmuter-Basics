@@ -38,6 +38,14 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
       return;
     }
 
+    // Check if we have a valid API key
+    const apiKey = validateAPIKey();
+    if (!apiKey || apiKey === "PLACEHOLDER_KEY") {
+      console.warn("Google Maps API key not configured. Skipping Google Maps initialization.");
+      resolve(); // Resolve without loading Google Maps
+      return;
+    }
+
     // Set up global callback
     window.googleMapsLoadResolve = resolve;
     window.googleMapsLoadReject = reject;
@@ -51,7 +59,7 @@ export const loadGoogleMapsAPI = (): Promise<void> => {
     };
 
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${validateAPIKey()}&libraries=places,marker&callback=initGoogleMaps`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker&callback=initGoogleMaps`;
     script.async = true;
     script.defer = true;
     
@@ -72,6 +80,7 @@ export const geocodeAddress = async (address: string) => {
     await loadGoogleMapsAPI();
     
     if (!window.google?.maps?.Geocoder) {
+      console.warn('Google Maps Geocoder not available. Cannot geocode address.');
       throw new Error('Google Maps Geocoder not available');
     }
     
@@ -170,7 +179,8 @@ export const getPlacePredictions = async (
     await loadGoogleMapsAPI();
     
     if (!window.google || !window.google.maps || !window.google.maps.places) {
-      throw new Error('Google Maps Places library not loaded');
+      console.warn('Google Maps Places library not available. Returning empty results.');
+      return []; // Return empty array instead of throwing error
     }
 
     // Create AutocompleteService instance
@@ -232,7 +242,8 @@ export const getPlaceDetails = async (placeId: string, sessionToken?: string) =>
     await loadGoogleMapsAPI();
     
     if (!window.google || !window.google.maps || !window.google.maps.places) {
-      throw new Error('Google Maps Places library not loaded');
+      console.warn('Google Maps Places library not available. Cannot get place details.');
+      throw new Error('Google Maps Places library not available');
     }
 
     // Create PlacesService instance (requires a map, but we can use a dummy div)
@@ -379,7 +390,12 @@ export const estimateDistance = (
 
 // Create session token for cost optimization
 export const createSessionToken = () => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  // Use crypto.randomUUID if available (browser only), otherwise fallback to a simple counter
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  // Fallback for server-side rendering - use a simple counter-based approach
+  return `session_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 };
 
 // Type definitions

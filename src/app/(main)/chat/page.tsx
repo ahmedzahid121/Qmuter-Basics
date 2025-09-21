@@ -81,7 +81,7 @@ export default function ChatPage() {
       senderName: "John Smith",
       senderAvatar: null,
       content: "Hi! I'm your driver for tomorrow's ride.",
-      timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
+      timestamp: new Date(1704063600000), // Static timestamp - 1 hour ago
       isRead: true
     },
     {
@@ -90,7 +90,7 @@ export default function ChatPage() {
       senderName: user?.displayName || "You",
       senderAvatar: user?.photoURL || undefined,
       content: "Hello! Looking forward to it.",
-      timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 minutes ago
+      timestamp: new Date(1704064500000), // Static timestamp - 45 minutes ago
       isRead: true
     },
     {
@@ -99,7 +99,7 @@ export default function ChatPage() {
       senderName: "John Smith",
       senderAvatar: null,
       content: "I'll pick you up at the main entrance at 8 AM sharp.",
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+      timestamp: new Date(1704065400000), // Static timestamp - 30 minutes ago
       isRead: false
     },
     {
@@ -108,7 +108,7 @@ export default function ChatPage() {
       senderName: "John Smith",
       senderAvatar: null,
       content: "See you tomorrow at 8 AM!",
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+      timestamp: new Date(1704065400000), // Static timestamp - 30 minutes ago
       isRead: false
     }
   ];

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 // import planRouteRouter from './routes/plan-route';
+import gtfsRouter from './routes/gtfs';
 
 // Initialize Express app
 const app = express();
@@ -39,6 +40,9 @@ app._router?.stack?.forEach((layer: any, index: number) => {
   }
 });
 console.log('=== END ROUTES ===');
+
+// Mount GTFS routes
+app.use('/v1/gtfs', gtfsRouter);
 
 // Mount plan-route routes (remove /api prefix since Firebase hosting adds it)
 // Temporarily add a simple test route to debug

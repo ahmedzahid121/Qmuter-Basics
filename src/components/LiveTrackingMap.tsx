@@ -62,13 +62,13 @@ export function LiveTrackingMap({ tripId, onClose }: LiveTrackingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Mock data for development
+  // Mock data for development - using static timestamps to avoid hydration issues
   const mockTrackingData: LiveTrackingData = {
     tripId: "trip123",
     driverLocation: {
       lat: 40.7128,
       lng: -74.0060,
-      timestamp: Date.now(),
+      timestamp: 1704067200000, // Static timestamp
       accuracy: 10,
       speed: 25,
       heading: 90
@@ -76,7 +76,7 @@ export function LiveTrackingMap({ tripId, onClose }: LiveTrackingMapProps) {
     riderLocation: {
       lat: 40.7500,
       lng: -73.9900,
-      timestamp: Date.now(),
+      timestamp: 1704067200000, // Static timestamp
       accuracy: 15,
       speed: 0,
       heading: 0
@@ -97,7 +97,7 @@ export function LiveTrackingMap({ tripId, onClose }: LiveTrackingMapProps) {
       riderArrived: false,
       driverETA: 8,
       riderETA: 5,
-      lastUpdated: Date.now()
+      lastUpdated: 1704067200000 // Static timestamp
     },
     driverId: "driver1",
     riderId: user?.uid || "rider1"
@@ -153,12 +153,12 @@ export function LiveTrackingMap({ tripId, onClose }: LiveTrackingMapProps) {
           ...trackingData.driverLocation,
           lat: trackingData.driverLocation.lat + (Math.random() - 0.5) * 0.001,
           lng: trackingData.driverLocation.lng + (Math.random() - 0.5) * 0.001,
-          timestamp: Date.now()
+          timestamp: Date.now() // This is fine in useEffect as it's client-side only
         },
         tripStatus: {
           ...trackingData.tripStatus,
           driverETA: Math.max(0, trackingData.tripStatus.driverETA - 1),
-          lastUpdated: Date.now()
+          lastUpdated: Date.now() // This is fine in useEffect as it's client-side only
         }
       };
 

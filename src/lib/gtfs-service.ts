@@ -124,7 +124,8 @@ class GTFSService {
 
   // Make API request through our backend proxy (which handles authentication)
   private async makeAPIRequest<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
-    const url = new URL(`/api/gtfs${endpoint}`);
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://australia-southeast2-qmuter-pro.cloudfunctions.net/api';
+    const url = new URL(`${baseURL}/v1/gtfs${endpoint}`);
     
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
