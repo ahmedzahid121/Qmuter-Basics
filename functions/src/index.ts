@@ -283,10 +283,13 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 // Export for Google Cloud Functions 2nd gen
 export const api = app;
 
+// Also export for CommonJS compatibility
+module.exports = { api };
+
 // Start server for Cloud Run
 const PORT = process.env.PORT || 8080;
 if (require.main === module) {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
 } 
