@@ -281,4 +281,12 @@ app.use((error: any, req: express.Request, res: express.Response, next: express.
 });
 
 // Export for Google Cloud Functions 2nd gen
-export const api = app; 
+export const api = app;
+
+// Start server for Cloud Run
+const PORT = process.env.PORT || 8080;
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+} 
