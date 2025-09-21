@@ -70,10 +70,37 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<QmuterUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  // TEMPORARY: Mock user for testing when authentication is bypassed
+  const BYPASS_AUTH = true; // Set to false to re-enable authentication
+  
+  const mockUser: QmuterUser = {
+    uid: 'test-user-123',
+    email: 'test@qmuter.com',
+    displayName: 'Test User',
+    photoURL: null,
+    role: 'passenger',
+    phoneNumber: '+64 21 123 4567',
+    country: 'New Zealand',
+    totalRides: 0,
+    totalCO2Saved: 0,
+    totalMoneySaved: 0,
+    badgeTier: 'Bronze',
+    walletBalance: 0,
+    onboardingComplete: true,
+    emailVerified: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const [user, setUser] = useState<QmuterUser | null>(BYPASS_AUTH ? mockUser : null);
+  const [loading, setLoading] = useState(BYPASS_AUTH ? false : true);
 
   useEffect(() => {
+    // TEMPORARY: Skip Firebase authentication if bypass is enabled
+    if (BYPASS_AUTH) {
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       try {
@@ -131,11 +158,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, pass: string) => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - signIn called with:', email);
+      return;
+    }
     await signInWithEmailAndPassword(auth, email, pass);
     // onAuthStateChanged will handle setting the user state
   };
   
   const signUp = async (data: SignUpData) => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - signUp called with:', data);
+      return;
+    }
+    
     const { email, password, fullName, phoneNumber, country } = data;
     if (!password) throw new Error("Password is required for email sign up.");
 
@@ -179,23 +215,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const signInWithGoogle = async () => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - signInWithGoogle called');
+      return;
+    }
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
     // onAuthStateChanged will handle user creation/update in firestore
   };
 
   const signInWithApple = async () => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - signInWithApple called');
+      return;
+    }
     const provider = new OAuthProvider('apple.com');
     await signInWithPopup(auth, provider);
     // onAuthStateChanged will handle user creation/update in firestore
   };
 
   const signOut = async () => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - signOut called');
+      return;
+    }
     await firebaseSignOut(auth);
     setUser(null);
   };
 
   const setRole = async (role: 'driver' | 'passenger') => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - setRole called with:', role);
+      if (user) {
+        const updatedUser = { ...user, role };
+        setUser(updatedUser);
+      }
+      return;
+    }
+    
     if (user) {
       const updatedUser = { ...user, role };
       setUser(updatedUser);
@@ -205,6 +262,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUser = async (data: Partial<Omit<QmuterUser, 'uid' | 'email'>>) => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - updateUser called with:', data);
+      if (user) {
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+      }
+      return;
+    }
+    
     if (user) {
       const updatedUser = { ...user, ...data };
       setUser(updatedUser);
@@ -214,6 +280,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const sendVerificationEmail = async () => {
+    if (BYPASS_AUTH) {
+      console.log('Authentication bypassed - sendVerificationEmail called');
+      return;
+    }
+    
     if (auth.currentUser) {
       await sendEmailVerification(auth.currentUser, {
         url: `${window.location.origin}/dashboard`,

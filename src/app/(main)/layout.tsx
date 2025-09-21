@@ -16,6 +16,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [showSplash, setShowSplash] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // TEMPORARY: Disable authentication for testing
+  const BYPASS_AUTH = true; // Set to false to re-enable authentication
+
   const isPublicPage = pathname === '/';
 
   // Detect if app is running in standalone mode (PWA)
@@ -26,6 +29,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
 
   useEffect(() => {
+    // TEMPORARY: Skip authentication checks if bypass is enabled
+    if (BYPASS_AUTH) {
+      setAuthChecked(true);
+      setShowSplash(false);
+      return;
+    }
+
     // Only show splash screen for PWA or first load
     if (!isStandalone && !showSplash) {
       setShowSplash(false);
@@ -48,7 +58,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   }, [user, loading, router, isPublicPage, pathname, isStandalone, showSplash]);
 
   // Show splash screen for PWA or during initial load
-  if (showSplash && (isStandalone || !authChecked)) {
+  if (!BYPASS_AUTH && showSplash && (isStandalone || !authChecked)) {
     return (
       <SplashScreen 
         onComplete={() => {
@@ -62,7 +72,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return <>{children}</>;
   }
   
-  const showLoader = loading || !user || (user && !user.onboardingComplete);
+  const showLoader = BYPASS_AUTH ? false : (loading || !user || (user && !user.onboardingComplete));
 
   return (
     <ErrorBoundary>
