@@ -1,7 +1,7 @@
 import { auth } from "@/lib/firebase";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 
-  'https://api-4tabhlzqfa-km.a.run.app';
+  'https://australia-southeast2-qmuter-pro.cloudfunctions.net/api';
 
 interface ApiResponse<T = any> {
   success: boolean;

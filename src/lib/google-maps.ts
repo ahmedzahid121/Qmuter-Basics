@@ -1,18 +1,15 @@
 import { mapsCache, calculateHaversineDistance, estimateTravelTime, calculateZoneDistance } from './maps-cache';
 
 // Google Maps API configuration and utilities
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyAb0w0BEAcZj2RyS5ymQ_FEigsVXZhXBA8";
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 const GOOGLE_MAPS_BASE_URL = "https://maps.googleapis.com/maps/api";
 
 // Validate API key with better error messages
 const validateAPIKey = () => {
   if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "YOUR_API_KEY") {
-    throw new Error("Google Maps API key is not configured. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.");
-  }
-  
-  // Check if it's the default hardcoded key (which is likely invalid)
-  if (GOOGLE_MAPS_API_KEY === "AIzaSyAb0w0BEAcZj2RyS5ymQ_FEigsVXZhXBA8") {
-    console.warn("Using default Google Maps API key. This may not work. Please set a valid API key in your environment variables.");
+    console.warn("Google Maps API key is not configured. Please set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your environment variables.");
+    console.warn("For now, using a placeholder key. Some features may not work properly.");
+    return "PLACEHOLDER_KEY"; // Return a placeholder instead of throwing
   }
   
   return GOOGLE_MAPS_API_KEY;
